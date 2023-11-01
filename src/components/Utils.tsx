@@ -1,4 +1,17 @@
 import { component$ } from '@builder.io/qwik'
+import { RequestEvent } from '@builder.io/qwik-city'
+
+import { neon, neonConfig } from '@neondatabase/serverless'
+import { drizzle } from 'drizzle-orm/neon-http'
+
+import * as schema from '~/db/schema'
+
+export const GetDb = ({ env }: RequestEvent) => {
+  neonConfig.fetchConnectionCache = true
+  const client = neon(env.get('DATABASE_URL'))
+
+  return drizzle(client, { schema })
+}
 
 export const TimeAgo = (input) => {
   const date = Date.parse(input)
