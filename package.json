@@ -43,13 +43,14 @@
     "vite-tsconfig-paths": "4.2.0"
   },
   "dependencies": {
-    "@builder.io/qwik": "1.2.16",
-    "@builder.io/qwik-city": "1.2.16",
+    "@builder.io/qwik": "1.2.6",
+    "@builder.io/qwik-city": "1.2.6",
     "@neondatabase/serverless": "^0.6.0",
     "@tailwindcss/typography": "0.5.9",
     "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
     "drizzle-orm": "^0.28.6",
+    "jose": "^5.1.0",
     "marked": "^7.0.5",
     "number-abbreviate": "^2.0.0",
     "postcss": "8.4.27",

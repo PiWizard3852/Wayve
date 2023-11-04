@@ -23,7 +23,7 @@ export default component$(() => {
         <RouterHead />
       </head>
       <body lang='en'>
-        <wc-toast />
+        <wc-toast position='bottom-center' />
         <RouterOutlet />
         <ServiceWorkerRegister />
       </body>

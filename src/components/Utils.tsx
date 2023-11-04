@@ -1,14 +1,77 @@
 import { component$ } from '@builder.io/qwik'
-import { RequestEvent } from '@builder.io/qwik-city'
+import { RequestEventAction } from '@builder.io/qwik-city'
 
 import { neon, neonConfig } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 
 import * as schema from '~/db/schema'
 
-export const GetDb = ({ env }: RequestEvent) => {
+export const HashText = async (
+  text: string,
+  requestEvent: RequestEventAction,
+) => {
+  const hashUtf8 = new TextEncoder().encode(requestEvent.env.get('AUTH_SECRET'))
+  const hashBuffer = await crypto.subtle.digest('SHA-256', hashUtf8)
+
+  const textUtf8 = new TextEncoder().encode(text)
+
+  const alg = { name: 'AES-GCM', iv: hashUtf8 }
+  const encryptKey = await crypto.subtle.importKey(
+    'raw',
+    hashBuffer,
+    alg,
+    false,
+    ['encrypt'],
+  )
+
+  return Array.from(
+    new Uint8Array(await crypto.subtle.encrypt(alg, encryptKey, textUtf8)),
+  )
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+export const ParseError = (res, fields: string[]) => {
+  const fieldErrors = res.value.fieldErrors
+
+  for (let i = 0; i < fields.length; i++) {
+    if (
+      fields[i] in fieldErrors &&
+      fieldErrors[fields[i]][0] === 'Fill in all fields'
+    ) {
+      return 'Fill in all fields'
+    }
+  }
+
+  for (let i = 0; i < fields.length; i++) {
+    if (fields[i] in fieldErrors && fieldErrors[fields[i]][0]) {
+      return fieldErrors[fields[i]][0]
+    }
+  }
+
+  return ''
+}
+
+export const GenerateSuccess = () => {
+  return {
+    failed: false,
+  }
+}
+
+export const GenerateError = (field: string, message: string) => {
+  const error = {
+    failed: true,
+    fieldErrors: {},
+  }
+
+  error.fieldErrors[field] = [message]
+
+  return error
+}
+
+export const GetDb = (requestEvent: RequestEventAction) => {
   neonConfig.fetchConnectionCache = true
-  const client = neon(env.get('DATABASE_URL'))
+  const client = neon(requestEvent.env.get('DATABASE_URL'))
 
   return drizzle(client, { schema })
 }
