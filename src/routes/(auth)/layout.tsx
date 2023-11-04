@@ -3,11 +3,19 @@ import { Link, RequestHandler } from '@builder.io/qwik-city'
 
 import Logo from '~/logo.png?jsx'
 
-export const onGet: RequestHandler = async ({ cacheControl }) => {
-  cacheControl({
+import { VerifyAuth } from '~/components/Auth'
+
+export const onGet: RequestHandler = async (requestEvent) => {
+  requestEvent.cacheControl({
     staleWhileRevalidate: 60 * 60 * 24,
     maxAge: 5,
   })
+
+  const user = await VerifyAuth(requestEvent)
+
+  if (user) {
+    throw requestEvent.redirect(302, '/')
+  }
 }
 
 export default component$(() => {

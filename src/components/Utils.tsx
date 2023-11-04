@@ -1,5 +1,5 @@
 import { component$ } from '@builder.io/qwik'
-import { RequestEventAction } from '@builder.io/qwik-city'
+import { RequestEvent, RequestEventAction } from '@builder.io/qwik-city'
 
 import { neon, neonConfig } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
@@ -69,7 +69,7 @@ export const GenerateError = (field: string, message: string) => {
   return error
 }
 
-export const GetDb = (requestEvent: RequestEventAction) => {
+export const GetDb = (requestEvent: RequestEventAction | RequestEvent) => {
   neonConfig.fetchConnectionCache = true
   const client = neon(requestEvent.env.get('DATABASE_URL'))
 

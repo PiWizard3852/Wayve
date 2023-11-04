@@ -2,6 +2,7 @@ import {
   $,
   Slot,
   component$,
+  useContextProvider,
   useOnWindow,
   useSignal,
   useTask$,
@@ -10,6 +11,7 @@ import {
   Link,
   RequestHandler,
   globalAction$,
+  routeLoader$,
   useLocation,
   useNavigate,
 } from '@builder.io/qwik-city'
@@ -17,6 +19,7 @@ import {
 import { toast } from 'wc-toast'
 import Logo from '~/logo.png?jsx'
 
+import { AuthContext, VerifyAuth } from '~/components/Auth'
 import { GenerateSuccess } from '~/components/Utils'
 
 export const onGet: RequestHandler = async ({ cacheControl }) => {
@@ -32,7 +35,35 @@ export const useLogout = globalAction$((_, requestEvent) => {
   return GenerateSuccess()
 })
 
+export const useGetSession = routeLoader$(async (requestEvent) => {
+  const user = await VerifyAuth(requestEvent)
+
+  if (!user) {
+    throw requestEvent.redirect(302, '/login')
+  } else {
+    const token = requestEvent.cookie.get('authToken')
+
+    const expiryDate = new Date()
+    expiryDate.setDate(expiryDate.getDate() + 7)
+
+    requestEvent.cookie.set('authToken', token.value, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: true,
+      expires: expiryDate,
+    })
+
+    return user
+  }
+})
+
 export default component$(() => {
+  const session = useGetSession()
+  const currentUser = useSignal(session.value)
+
+  useContextProvider(AuthContext, currentUser)
+
   const logout = useLogout()
 
   const navigate = useNavigate()
@@ -201,7 +232,9 @@ export default component$(() => {
                   />
                   <div class='absolute right-0 top-[90px] z-30 rounded-[8px] border border-border bg-white p-[20px] p-[20px]'>
                     <Link
-                      href='/user/@wodicode'
+                      href={
+                        '/user/@' + currentUser.value.username.toLowerCase()
+                      }
                       class='mb-[20px] flex cursor-pointer items-center rounded-[5px] p-[10px] text-[20px] duration-200 hover:bg-primary hover:text-branding'
                     >
                       <svg
