@@ -38,7 +38,9 @@ export const useLogin = globalAction$(
       )
     }
 
-    const hexSecret = new TextEncoder().encode(requestEvent.env.get('AUTH_SECRET'))
+    const hexSecret = new TextEncoder().encode(
+      requestEvent.env.get('AUTH_SECRET'),
+    )
 
     const token = await new jose.SignJWT({ username: user.username })
       .setProtectedHeader({ alg: 'HS256' })
