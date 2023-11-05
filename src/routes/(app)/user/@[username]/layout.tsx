@@ -1,31 +1,94 @@
 import { Slot, component$, useSignal, useTask$ } from '@builder.io/qwik'
-import { Link, useLocation } from '@builder.io/qwik-city'
+import { Link, routeLoader$, useLocation } from '@builder.io/qwik-city'
 
+import { and, eq, ilike } from 'drizzle-orm'
 import abbreviate from 'number-abbreviate'
 
-export default component$(() => {
-  const user = {
-    username: 'wodicode',
-    name: 'test user',
-    followers: [],
+import { followers, users } from '~/db/schema'
+
+import { VerifyAuth } from '~/components/Auth'
+import { GetDb } from '~/components/Utils'
+
+export const useGetUser = routeLoader$(async (requestEvent) => {
+  const currentUser = await VerifyAuth(requestEvent)
+
+  if (!currentUser) {
+    return requestEvent.fail(401, {
+      response: 'Unauthenticated',
+    })
   }
+
+  const username: string = requestEvent.params.username
+
+  const db = GetDb(requestEvent)
+
+  const possibleUsers = await db.query.users.findMany({
+    where: ilike(users.username, username),
+    columns: {
+      name: true,
+      username: true,
+      createdAt: true,
+    },
+    with: {
+      followers: true,
+      posts: {
+        columns: {
+          id: true,
+        },
+      },
+      comments: {
+        columns: {
+          id: true,
+        },
+      },
+    },
+  })
+
+  let user
+
+  for (let i = 0; i < possibleUsers.length; i++) {
+    if (possibleUsers[0].username.toLowerCase() === username.toLowerCase()) {
+      user = possibleUsers[0]
+    }
+  }
+
+  if (!user) {
+    return requestEvent.fail(404, {
+      response: 'User does not exist',
+    })
+  }
+
+  const following = await db.query.followers.findFirst({
+    where: and(
+      eq(followers.followed, user.username),
+      eq(followers.follower, currentUser.username),
+    ),
+  })
+
+  return { ...user, isFollowing: !!following }
+})
+
+export default component$(() => {
+  const user = useGetUser()
 
   const location = useLocation()
 
-  const activePage = useSignal<0 | 1 | 2>()
-  const followCount = useSignal(user.followers.length)
+  const activePage = useSignal<0 | 1 | 2>(0)
+  const followCount = useSignal(user.value.followers.length)
   const following = useSignal(false)
 
   useTask$(({ track }) => {
     track(() => location.url.pathname)
 
-    if (location.url.pathname === '/user/@' + user.username + '/posts/') {
+    if (location.url.pathname === '/user/@' + location.params.username + '/posts/') {
       activePage.value = 1
     } else if (
       location.url.pathname ===
-      '/user/@' + user.username + '/comments/'
+      '/user/@' + location.params.username + '/comments/'
     ) {
       activePage.value = 2
+    } else {
+      activePage.value = 0
     }
   })
 
@@ -36,7 +99,7 @@ export default component$(() => {
           <div class='flex w-full items-center'>
             <Link
               class='cursor-pointer'
-              href={'/user/@' + user.username}
+              href={'/user/@' + user.value.username}
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -54,15 +117,15 @@ export default component$(() => {
             <div class='ml-[5px] flex max-w-[calc(100%-65px)] flex-col'>
               <Link
                 class='max-w-full cursor-pointer truncate text-[16px] sm:text-[17px]'
-                href={'/user/@' + user.username}
+                href={'/user/@' + user.value.username}
               >
-                <h1>{user.name}</h1>
+                <h1>{user.value.name}</h1>
               </Link>
               <Link
                 class='max-w-full cursor-pointer truncate text-[14px] text-gray sm:text-[15px]'
-                href={'/user/@' + user.username}
+                href={'/user/@' + user.value.username}
               >
-                <h2>@{user.username}</h2>
+                <h2>@{user.value.username}</h2>
               </Link>
             </div>
           </div>
@@ -107,7 +170,7 @@ export default component$(() => {
                 ? 'border-x-0 border-b-[2px] border-t-0 border-solid border-black'
                 : 'text-gray duration-200 hover:text-black')
             }
-            href={'/user/@' + user.username + '/posts'}
+            href={'/user/@' + user.value.username + '/posts'}
           >
             Posts
           </Link>
@@ -118,7 +181,7 @@ export default component$(() => {
                 ? 'border-x-0 border-b-[2px] border-t-0 border-solid border-black'
                 : 'text-gray duration-200 hover:text-black')
             }
-            href={'/user/@' + user.username + '/comments'}
+            href={'/user/@' + user.value.username + '/comments'}
           >
             Comments
           </Link>

@@ -1,10 +1,41 @@
 import { component$, useSignal } from '@builder.io/qwik'
 import { Link } from '@builder.io/qwik-city'
 
+import { and, eq } from 'drizzle-orm'
 import { marked } from 'marked'
 import abbreviate from 'number-abbreviate'
 
+import { commentDislikes, postLikes } from '~/db/schema'
+
 import { TimeAgo } from '~/components/Utils'
+
+export const GetCommentVotes = async function (comments, db, user) {
+  for (let i = 0; i < comments.length; i++) {
+    const like = await db.query.commentLikes.findFirst({
+      where: and(
+        eq(postLikes.postId, comments[i].id),
+        eq(postLikes.voter, user.username),
+      ),
+    })
+
+    const dislike = await db.query.commentDislikes.findFirst({
+      where: and(
+        eq(commentDislikes.commentId, comments[i].id),
+        eq(commentDislikes.voter, user.username),
+      ),
+    })
+
+    if (like) {
+      comments[i].vote = 'liking'
+    } else if (dislike) {
+      comments[i].vote = 'disliking'
+    } else {
+      comments[i].vote = 'none'
+    }
+  }
+
+  return comments
+}
 
 // Params of type-any for now
 export const CommentView = component$(({ preview, comment }: any) => {

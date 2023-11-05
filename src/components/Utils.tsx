@@ -6,6 +6,14 @@ import { drizzle } from 'drizzle-orm/neon-http'
 
 import * as schema from '~/db/schema'
 
+export const SortByRecent = async (PostComments) => {
+  PostComments.sort((a, b) => {
+    return Date.parse(b.createdAt) - Date.parse(a.createdAt)
+  })
+
+  return PostComments
+}
+
 export const HashText = async (
   text: string,
   requestEvent: RequestEventAction,

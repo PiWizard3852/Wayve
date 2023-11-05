@@ -1,10 +1,41 @@
 import { component$, useSignal } from '@builder.io/qwik'
 import { Link } from '@builder.io/qwik-city'
 
+import { and, eq } from 'drizzle-orm'
 import { marked } from 'marked'
 import abbreviate from 'number-abbreviate'
 
+import { postDislikes, postLikes } from '~/db/schema'
+
 import { TimeAgo } from '~/components/Utils'
+
+export const GetPostVote = async function (posts, db, user) {
+  for (let i = 0; i < posts.length; i++) {
+    const like = await db.query.postLikes.findFirst({
+      where: and(
+        eq(postLikes.postId, posts[i].id),
+        eq(postLikes.voter, user.username),
+      ),
+    })
+
+    const dislike = await db.query.postDislikes.findFirst({
+      where: and(
+        eq(postDislikes.postId, posts[i].id),
+        eq(postDislikes.voter, user.username),
+      ),
+    })
+
+    if (like) {
+      posts[i].vote = 'liking'
+    } else if (dislike) {
+      posts[i].vote = 'disliking'
+    } else {
+      posts[i].vote = 'none'
+    }
+  }
+
+  return posts
+}
 
 // Params of type-any for now
 export const PostView = component$(({ preview, post }: any) => {
