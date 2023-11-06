@@ -13,9 +13,7 @@ export const useGetPosts = routeLoader$(async (requestEvent) => {
   const currentUser = await VerifyAuth(requestEvent)
 
   if (!currentUser) {
-    return requestEvent.fail(400, {
-      response: 'Unauthenticated',
-    })
+    requestEvent.redirect(301, '/login')
   }
 
   const db = GetDb(requestEvent)

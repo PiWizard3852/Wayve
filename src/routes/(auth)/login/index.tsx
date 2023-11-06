@@ -14,6 +14,7 @@ import {
   HashText,
   Loading,
   ParseError,
+  ParseSuccess,
 } from '~/components/Utils'
 
 export const useLogin = globalAction$(
@@ -57,7 +58,7 @@ export const useLogin = globalAction$(
       expires: expiryDate,
     })
 
-    return GenerateSuccess()
+    return GenerateSuccess('Successfully logged in!')
   },
   zod$({
     email: z
@@ -105,7 +106,7 @@ export default component$(() => {
           })
 
           if (res.status === 200) {
-            toast.success('Successfully logged in!')
+            toast.success(ParseSuccess(res).message)
             await navigate('/')
           } else {
             toast.error(ParseError(res, ['email', 'password']))

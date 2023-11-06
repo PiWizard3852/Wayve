@@ -83,9 +83,21 @@ export const ParseError = (res, fields: string[]) => {
   return ''
 }
 
-export const GenerateSuccess = () => {
+export const ParseSuccess = (res) => {
+  return {
+    message: res.value.message,
+    data: res.value.data,
+  }
+}
+
+export const GenerateSuccess = (
+  message: string = 'Success!',
+  data?: object,
+) => {
   return {
     failed: false,
+    message: message,
+    data: data,
   }
 }
 

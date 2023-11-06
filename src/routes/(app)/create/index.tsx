@@ -1,9 +1,79 @@
 import { component$, useSignal, useVisibleTask$ } from '@builder.io/qwik'
+import { routeAction$, useNavigate, z, zod$ } from '@builder.io/qwik-city'
+
+import { toast } from 'wc-toast'
+
+import { posts } from '~/db/schema'
+
+import { VerifyAuth } from '~/components/Auth'
+import {
+  GenerateError,
+  GenerateSuccess,
+  GetDb,
+  ParseError,
+  ParseSuccess,
+} from '~/components/Utils'
+
+export const useCreatePost = routeAction$(
+  async (data, requestEvent) => {
+    const currentUser = await VerifyAuth(requestEvent)
+
+    if (!currentUser) {
+      return requestEvent.fail(
+        400,
+        GenerateError('currentUser', 'Unauthorized'),
+      )
+    }
+
+    const contentTrim = data.content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+      .trim()
+
+    if (contentTrim === '') {
+      return GenerateError('content', 'Fill in all fields')
+    }
+
+    const db = GetDb(requestEvent)
+
+    const post = await db
+      .insert(posts)
+      .values({
+        title: data.title.trim(),
+        content: contentTrim,
+        username: currentUser.username,
+      })
+      .returning()
+
+    return GenerateSuccess('Post published successfully!', post[0])
+  },
+  zod$({
+    title: z
+      .string()
+      .trim()
+      .nonempty({ message: 'Fill in all fields' })
+      .max(80, { message: 'Title exceeds character limit' }),
+    content: z
+      .string()
+      .trim()
+      .nonempty({ message: 'Fill in all fields' })
+      .max(500, { message: 'Title exceeds character limit' }),
+  }),
+)
 
 export default component$(() => {
+  const createPost = useCreatePost()
+
+  const loading = useSignal(false)
+
   const textareaRef = useSignal<Element>()
   const title = useSignal('')
-  const postContent = useSignal('')
+  const content = useSignal('')
+
+  const navigate = useNavigate()
 
   useVisibleTask$(() => {
     textareaRef.value.addEventListener('input', (e) => {
@@ -24,6 +94,30 @@ export default component$(() => {
         <button
           preventdefault:click
           class='ml-[10px] cursor-pointer rounded-[5px] bg-primary p-[10px] duration-200 hover:text-branding'
+          disabled={loading.value}
+          onClick$={async () => {
+            if (!loading.value) {
+              loading.value = true
+
+              const res = await createPost.submit({
+                title: title.value,
+                content: content.value,
+              })
+
+              if (res.status !== 200) {
+                toast.error(
+                  ParseError(res, ['currentUser', 'title', 'content']),
+                )
+              } else {
+                toast.success(ParseSuccess(res).message)
+                title.value = ''
+                content.value = ''
+                await navigate('/post/' + ParseSuccess(res).data.id)
+              }
+
+              loading.value = false
+            }
+          }}
         >
           <svg
             xmlns='http://www.w3.org/2000/svg'
@@ -43,7 +137,7 @@ export default component$(() => {
       </div>
       <textarea
         ref={textareaRef}
-        bind:value={postContent}
+        bind:value={content}
         rows={10}
         placeholder='What&#8217;s on your mind?'
         class='whitespace-normal rounded-[5px] bg-primary p-[10px] placeholder-gray outline-none'

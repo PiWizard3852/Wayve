@@ -14,6 +14,7 @@ import {
   HashText,
   Loading,
   ParseError,
+  ParseSuccess,
 } from '~/components/Utils'
 
 export const useValidate = globalAction$(
@@ -127,7 +128,7 @@ export const useSignup = globalAction$(
       username: data.username,
     })
 
-    return GenerateSuccess()
+    return GenerateSuccess('Account successfully created! Redirecting...')
   },
   zod$({
     firstName: z
@@ -266,7 +267,7 @@ export default component$(() => {
             onClick$={async () => {
               loading.value = true
 
-              const res = await signup.submit({
+              const res1 = await signup.submit({
                 firstName: firstName.value,
                 lastName: lastName.value,
                 email: email.value,
@@ -275,22 +276,22 @@ export default component$(() => {
                 username: username.value,
               })
 
-              if (res.status === 200) {
-                toast.success('Account successfully created! Redirecting...')
+              if (res1.status === 200) {
+                toast.success(ParseSuccess(res1).message)
 
-                const res = await login.submit({
+                const res2 = await login.submit({
                   email: email.value,
                   password: password.value,
                 })
 
-                if (res.status === 200) {
+                if (res2.status === 200) {
                   await navigate('/')
                 } else {
-                  toast.error(ParseError(res, ['email', 'password']))
+                  toast.error(ParseError(res2, ['email', 'password']))
                 }
               } else {
                 toast.error(
-                  ParseError(res, [
+                  ParseError(res1, [
                     'firstName',
                     'lastName',
                     'email',

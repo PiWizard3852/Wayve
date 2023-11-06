@@ -13,10 +13,8 @@ import {
   globalAction$,
   routeLoader$,
   useLocation,
-  useNavigate,
 } from '@builder.io/qwik-city'
 
-import { toast } from 'wc-toast'
 import Logo from '~/logo.png?jsx'
 
 import { AuthContext, VerifyAuth } from '~/components/Auth'
@@ -65,8 +63,6 @@ export default component$(() => {
   useContextProvider(AuthContext, currentUser)
 
   const logout = useLogout()
-
-  const navigate = useNavigate()
 
   const activePage = useSignal<0 | 1 | 2 | 3 | 4>()
   const navActive = useSignal(false)
@@ -257,12 +253,7 @@ export default component$(() => {
                       preventdefault:click
                       class='flex cursor-pointer items-center rounded-[5px] p-[10px] text-[20px] duration-200 hover:bg-primary hover:text-branding'
                       onClick$={async () => {
-                        const res = await logout.submit()
-
-                        if (res.status === 200) {
-                          toast.success('Successfully logged out!')
-                          await navigate('/login')
-                        }
+                        await logout.submit()
                       }}
                     >
                       <svg

@@ -226,27 +226,18 @@ export default component$(() => {
               preventdefault:click
               class='flex w-max cursor-pointer items-center rounded-[5px] bg-primary p-[10px] duration-200 hover:text-branding'
               onClick$={async () => {
-                const wasFollowing = following.value
-
-                if (following.value) {
-                  following.value = !following.value
-                  followerCount.value = followerCount.value - 1
-                } else {
-                  following.value = !following.value
-                  followerCount.value = followerCount.value + 1
-                }
-
                 const res = await followUser.submit()
-                if (res.status !== 200) {
-                  toast.error(ParseError(res, ['user', 'currentUser']))
 
-                  following.value = wasFollowing
-
-                  if (wasFollowing) {
-                    followerCount.value = followerCount.value + 1
-                  } else {
+                if (res.status === 200) {
+                  if (following.value) {
                     followerCount.value = followerCount.value - 1
+                  } else {
+                    followerCount.value = followerCount.value + 1
                   }
+
+                  following.value = !following.value
+                } else {
+                  toast.error(ParseError(res, ['user', 'currentUser']))
                 }
               }}
             >
