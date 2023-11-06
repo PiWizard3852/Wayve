@@ -47,7 +47,7 @@ export const useGetPosts = routeLoader$(async (requestEvent) => {
 export default component$(() => {
   const posts = useGetPosts()
 
-  if (!posts.value.id) {
+  if (posts.value.length === 0) {
     return <></>
   }
 

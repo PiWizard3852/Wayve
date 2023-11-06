@@ -41,7 +41,7 @@ export const useGetComments = routeLoader$(async (requestEvent) => {
 export default component$(() => {
   const comments = useGetComments()
 
-  if (!comments.value.id) {
+  if (comments.value.length === 0) {
     return <></>
   }
 

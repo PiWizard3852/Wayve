@@ -24,6 +24,7 @@ export const useGetComment = routeLoader$(async (requestEvent) => {
     where: eq(comments.id, commentId),
     columns: {
       id: true,
+      postId: true,
       content: true,
       createdAt: true,
     },

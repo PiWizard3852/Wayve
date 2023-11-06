@@ -24,6 +24,7 @@ export const useGetComments = routeLoader$(async (requestEvent) => {
     where: eq(comments.postId, postId),
     columns: {
       id: true,
+      postId: true,
       content: true,
       createdAt: true,
     },
@@ -45,7 +46,7 @@ export const useGetComments = routeLoader$(async (requestEvent) => {
 export default component$(() => {
   const comments = useGetComments()
 
-  if (!comments) {
+  if (comments.value.length === 0) {
     return <></>
   }
 

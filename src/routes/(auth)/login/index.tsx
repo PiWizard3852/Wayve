@@ -97,6 +97,7 @@ export default component$(() => {
       <button
         preventdefault:click
         class='cursor-pointer rounded-[5px] bg-primary p-[10px] duration-200 hover:text-branding'
+        disabled={loading.value}
         onClick$={async () => {
           loading.value = true
 
