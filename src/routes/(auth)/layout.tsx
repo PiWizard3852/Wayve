@@ -11,9 +11,9 @@ export const onGet: RequestHandler = async (requestEvent) => {
     maxAge: 5,
   })
 
-  const user = await VerifyAuth(requestEvent)
+  const currentUser = await VerifyAuth(requestEvent)
 
-  if (user) {
+  if (currentUser) {
     throw requestEvent.redirect(302, '/')
   }
 }

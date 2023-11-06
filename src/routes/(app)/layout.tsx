@@ -36,9 +36,9 @@ export const useLogout = globalAction$((_, requestEvent) => {
 })
 
 export const useGetSession = routeLoader$(async (requestEvent) => {
-  const user = await VerifyAuth(requestEvent)
+  const currentUser = await VerifyAuth(requestEvent)
 
-  if (!user) {
+  if (!currentUser) {
     throw requestEvent.redirect(302, '/login')
   } else {
     const token = requestEvent.cookie.get('authToken')
@@ -54,7 +54,7 @@ export const useGetSession = routeLoader$(async (requestEvent) => {
       expires: expiryDate,
     })
 
-    return user
+    return currentUser
   }
 })
 

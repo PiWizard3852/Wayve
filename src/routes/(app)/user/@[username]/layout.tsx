@@ -1,21 +1,108 @@
 import { Slot, component$, useSignal, useTask$ } from '@builder.io/qwik'
-import { Link, routeLoader$, useLocation } from '@builder.io/qwik-city'
+import {
+  Link,
+  routeAction$,
+  routeLoader$,
+  useLocation,
+} from '@builder.io/qwik-city'
 
 import { and, eq, ilike } from 'drizzle-orm'
 import abbreviate from 'number-abbreviate'
+import { toast } from 'wc-toast'
 
 import { followers, users } from '~/db/schema'
 
 import { VerifyAuth } from '~/components/Auth'
-import { GetDb } from '~/components/Utils'
+import {
+  GenerateError,
+  GenerateSuccess,
+  GetDb,
+  ParseError,
+} from '~/components/Utils'
+
+export const useFollowUser = routeAction$(async (_, requestEvent) => {
+  const username = requestEvent.params.username
+
+  const currentUser = await VerifyAuth(requestEvent)
+
+  if (!currentUser) {
+    return requestEvent.fail(400, GenerateError('currentUser', 'Unauthorized'))
+  }
+
+  const db = GetDb(requestEvent)
+
+  const possibleUsers = await db.query.users.findMany({
+    where: ilike(users.username, username),
+    columns: {
+      name: true,
+      username: true,
+      createdAt: true,
+    },
+    with: {
+      followers: true,
+      posts: {
+        columns: {
+          id: true,
+        },
+      },
+      comments: {
+        columns: {
+          id: true,
+        },
+      },
+    },
+  })
+
+  let user
+
+  for (let i = 0; i < possibleUsers.length; i++) {
+    if (possibleUsers[0].username.toLowerCase() === username.toLowerCase()) {
+      user = possibleUsers[0]
+    }
+  }
+
+  if (!user) {
+    return requestEvent.fail(400, GenerateError('user', 'User does not exist'))
+  }
+
+  if (user.username === currentUser.username) {
+    return requestEvent.fail(
+      400,
+      GenerateError('currentUser', 'You cannot follow yourself'),
+    )
+  }
+
+  const following = await db.query.followers.findFirst({
+    where: and(
+      eq(followers.followed, user.username),
+      eq(followers.follower, currentUser.username),
+    ),
+  })
+
+  if (following) {
+    await db
+      .delete(followers)
+      .where(
+        and(
+          eq(followers.followed, user.username),
+          eq(followers.follower, currentUser.username),
+        ),
+      )
+  } else {
+    await db.insert(followers).values({
+      followed: user.username,
+      follower: currentUser.username,
+    })
+  }
+
+  return GenerateSuccess()
+})
 
 export const useGetUser = routeLoader$(async (requestEvent) => {
   const currentUser = await VerifyAuth(requestEvent)
 
   if (!currentUser) {
-    return requestEvent.fail(401, {
-      response: 'Unauthenticated',
-    })
+    requestEvent.redirect(301, '/login')
   }
 
   const username: string = requestEvent.params.username
@@ -53,7 +140,7 @@ export const useGetUser = routeLoader$(async (requestEvent) => {
   }
 
   if (!user) {
-    return requestEvent.fail(404, {
+    return requestEvent.fail(400, {
       response: 'User does not exist',
     })
   }
@@ -71,16 +158,21 @@ export const useGetUser = routeLoader$(async (requestEvent) => {
 export default component$(() => {
   const user = useGetUser()
 
+  const followUser = useFollowUser()
+
   const location = useLocation()
 
   const activePage = useSignal<0 | 1 | 2>(0)
-  const followCount = useSignal(user.value.followers.length)
-  const following = useSignal(false)
+  const followerCount = useSignal(user.value.followers.length)
+  const following = useSignal(user.value.isFollowing)
 
   useTask$(({ track }) => {
     track(() => location.url.pathname)
 
-    if (location.url.pathname === '/user/@' + location.params.username + '/posts/') {
+    if (
+      location.url.pathname ===
+      '/user/@' + location.params.username + '/posts/'
+    ) {
       activePage.value = 1
     } else if (
       location.url.pathname ===
@@ -133,12 +225,36 @@ export default component$(() => {
             <button
               preventdefault:click
               class='flex w-max cursor-pointer items-center rounded-[5px] bg-primary p-[10px] duration-200 hover:text-branding'
+              onClick$={async () => {
+                const wasFollowing = following.value
+
+                if (following.value) {
+                  following.value = !following.value
+                  followerCount.value = followerCount.value - 1
+                } else {
+                  following.value = !following.value
+                  followerCount.value = followerCount.value + 1
+                }
+
+                const res = await followUser.submit()
+                if (res.status !== 200) {
+                  toast.error(ParseError(res, ['user', 'currentUser']))
+
+                  following.value = wasFollowing
+
+                  if (wasFollowing) {
+                    followerCount.value = followerCount.value + 1
+                  } else {
+                    followerCount.value = followerCount.value - 1
+                  }
+                }
+              }}
             >
               <div class='mr-[5px] text-[15px]'>
                 {following.value ? 'Following' : 'Follow'}
               </div>
               <div class='text-[14px] text-gray'>
-                {abbreviate(followCount.value)}
+                {abbreviate(followerCount.value)}
               </div>
             </button>
             <button
@@ -170,7 +286,7 @@ export default component$(() => {
                 ? 'border-x-0 border-b-[2px] border-t-0 border-solid border-black'
                 : 'text-gray duration-200 hover:text-black')
             }
-            href={'/user/@' + user.value.username + '/posts'}
+            href={'/user/@' + user.value.username.toLowerCase() + '/posts'}
           >
             Posts
           </Link>
@@ -181,7 +297,7 @@ export default component$(() => {
                 ? 'border-x-0 border-b-[2px] border-t-0 border-solid border-black'
                 : 'text-gray duration-200 hover:text-black')
             }
-            href={'/user/@' + user.value.username + '/comments'}
+            href={'/user/@' + user.value.username.toLowerCase() + '/comments'}
           >
             Comments
           </Link>
