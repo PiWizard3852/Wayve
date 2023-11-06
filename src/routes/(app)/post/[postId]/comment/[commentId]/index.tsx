@@ -1,19 +1,58 @@
 import { component$ } from '@builder.io/qwik'
-import { Link } from '@builder.io/qwik-city'
+import { Link, routeLoader$ } from '@builder.io/qwik-city'
 
-import { CommentView } from '~/components/Comment'
+import { eq } from 'drizzle-orm'
+
+import { comments } from '~/db/schema'
+
+import { VerifyAuth } from '~/components/Auth'
+import { CommentView, GetCommentVotes } from '~/components/Comment'
+import { GetDb } from '~/components/Utils'
+
+export const useGetComment = routeLoader$(async (requestEvent) => {
+  const commentId = requestEvent.params.commentId
+
+  const currentUser = await VerifyAuth(requestEvent)
+
+  if (!currentUser) {
+    throw requestEvent.redirect(302, '/login')
+  }
+
+  const db = GetDb(requestEvent)
+
+  const comment = await db.query.comments.findFirst({
+    where: eq(comments.id, commentId),
+    columns: {
+      id: true,
+      content: true,
+      createdAt: true,
+    },
+    with: {
+      user: {
+        columns: {
+          name: true,
+          username: true,
+        },
+      },
+      likes: true,
+      dislikes: true,
+    },
+  })
+
+  if (!comment) {
+    return requestEvent.fail(404, {
+      response: 'Comment does not exist',
+    })
+  }
+
+  return (await GetCommentVotes([comment], db, currentUser))[0]
+})
 
 export default component$(() => {
-  const comment = {
-    content: 'This is the example content',
-    postId: '2344',
-    user: {
-      username: 'wodicode',
-      name: 'test user',
-    },
-    likes: [],
-    dislikes: [],
-    createdAt: new Date(),
+  const comment = useGetComment()
+
+  if (!comment.value.id) {
+    return <></>
   }
 
   return (
@@ -21,11 +60,11 @@ export default component$(() => {
       <CommentView
         // @ts-ignore
         preview={true}
-        comment={comment}
+        comment={comment.value}
       />
       <Link
         class='cursor-pointer rounded-[5px] border border-solid border-border bg-white p-[10px] text-center duration-200 hover:text-branding'
-        href={'/post/' + comment.postId}
+        href={'/post/' + comment.value.postId}
       >
         See all comments
       </Link>

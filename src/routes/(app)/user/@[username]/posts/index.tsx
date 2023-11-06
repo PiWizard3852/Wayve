@@ -47,6 +47,10 @@ export const useGetPosts = routeLoader$(async (requestEvent) => {
 export default component$(() => {
   const posts = useGetPosts()
 
+  if (!posts.value.id) {
+    return <></>
+  }
+
   return (
     <>
       {posts.value.map((post) => (

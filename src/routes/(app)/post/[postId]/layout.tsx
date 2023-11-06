@@ -1,20 +1,61 @@
 import { Slot, component$, useSignal, useVisibleTask$ } from '@builder.io/qwik'
+import { routeLoader$ } from '@builder.io/qwik-city'
 
-import { PostView } from '~/components/Post'
+import { eq } from 'drizzle-orm'
+
+import { posts } from '~/db/schema'
+
+import { VerifyAuth } from '~/components/Auth'
+import { GetPostVote, PostView } from '~/components/Post'
+import { GetDb } from '~/components/Utils'
+
+export const useGetPost = routeLoader$(async (requestEvent) => {
+  const postId = requestEvent.params.postId
+
+  const currentUser = await VerifyAuth(requestEvent)
+
+  if (!currentUser) {
+    throw requestEvent.redirect(302, '/login')
+  }
+
+  const db = GetDb(requestEvent)
+
+  const post = await db.query.posts.findFirst({
+    where: eq(posts.id, postId),
+    columns: {
+      id: true,
+      title: true,
+      content: true,
+      createdAt: true,
+    },
+    with: {
+      user: {
+        columns: {
+          name: true,
+          username: true,
+        },
+      },
+      comments: {
+        columns: {
+          id: true,
+        },
+      },
+      likes: true,
+      dislikes: true,
+    },
+  })
+
+  if (!post) {
+    return requestEvent.fail(404, {
+      response: 'Post does not exist',
+    })
+  }
+
+  return (await GetPostVote([post], db, currentUser))[0]
+})
 
 export default component$(() => {
-  const post = {
-    title: 'Title',
-    content: 'Content',
-    user: {
-      username: 'username',
-      name: 'Full Name',
-    },
-    likes: [],
-    dislikes: [],
-    comments: [],
-    createdAt: new Date(),
-  }
+  const post = useGetPost()
 
   const textareaRef = useSignal<Element>()
   const commentContent = useSignal('')
@@ -26,10 +67,14 @@ export default component$(() => {
     })
   })
 
+  if (!post.value.id) {
+    return <div ref={textareaRef} />
+  }
+
   return (
     <>
       {/*@ts-ignore*/}
-      <PostView post={post} />
+      <PostView post={post.value} />
       <form class='sticky top-[110px] my-[20px] flex w-full items-center rounded-[8px] border border-border bg-white p-[20px] outline outline-[20px] outline-background'>
         <textarea
           ref={textareaRef}

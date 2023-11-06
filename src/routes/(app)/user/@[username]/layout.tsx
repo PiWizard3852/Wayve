@@ -102,7 +102,7 @@ export const useGetUser = routeLoader$(async (requestEvent) => {
   const currentUser = await VerifyAuth(requestEvent)
 
   if (!currentUser) {
-    requestEvent.redirect(301, '/login')
+    throw requestEvent.redirect(302, '/login')
   }
 
   const username: string = requestEvent.params.username
@@ -140,7 +140,7 @@ export const useGetUser = routeLoader$(async (requestEvent) => {
   }
 
   if (!user) {
-    return requestEvent.fail(400, {
+    return requestEvent.fail(404, {
       response: 'User does not exist',
     })
   }
@@ -163,8 +163,8 @@ export default component$(() => {
   const location = useLocation()
 
   const activePage = useSignal<0 | 1 | 2>(0)
-  const followerCount = useSignal(user.value.followers.length)
-  const following = useSignal(user.value.isFollowing)
+  const followerCount = useSignal(user.value?.followers?.length)
+  const following = useSignal(user.value?.isFollowing)
 
   useTask$(({ track }) => {
     track(() => location.url.pathname)
@@ -183,6 +183,10 @@ export default component$(() => {
       activePage.value = 0
     }
   })
+
+  if (!user.value.username) {
+    return <></>
+  }
 
   return (
     <>

@@ -41,6 +41,10 @@ export const useGetComments = routeLoader$(async (requestEvent) => {
 export default component$(() => {
   const comments = useGetComments()
 
+  if (!comments.value.id) {
+    return <></>
+  }
+
   return (
     <>
       {comments.value.map((comment) => (

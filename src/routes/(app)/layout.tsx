@@ -226,7 +226,12 @@ export default component$(() => {
                       profileActive.value = false
                     }}
                   />
-                  <div class='absolute right-0 top-[90px] z-30 rounded-[8px] border border-border bg-white p-[20px] p-[20px]'>
+                  <div
+                    class='absolute right-0 top-[90px] z-30 rounded-[8px] border border-border bg-white p-[20px] p-[20px]'
+                    onClick$={() => {
+                      profileActive.value = false
+                    }}
+                  >
                     <Link
                       href={
                         '/user/@' + currentUser.value.username.toLowerCase()
