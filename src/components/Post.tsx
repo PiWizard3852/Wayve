@@ -9,19 +9,19 @@ import { postDislikes, postLikes } from '~/db/schema'
 
 import { TimeAgo } from '~/components/Utils'
 
-export const GetPostVote = async function (posts, db, user) {
+export const GetPostVote = async function (posts, db, currentUser) {
   for (let i = 0; i < posts.length; i++) {
     const like = await db.query.postLikes.findFirst({
       where: and(
         eq(postLikes.postId, posts[i].id),
-        eq(postLikes.voter, user.username),
+        eq(postLikes.voter, currentUser.username),
       ),
     })
 
     const dislike = await db.query.postDislikes.findFirst({
       where: and(
         eq(postDislikes.postId, posts[i].id),
-        eq(postDislikes.voter, user.username),
+        eq(postDislikes.voter, currentUser.username),
       ),
     })
 

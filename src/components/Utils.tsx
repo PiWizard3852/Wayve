@@ -6,6 +6,29 @@ import { drizzle } from 'drizzle-orm/neon-http'
 
 import * as schema from '~/db/schema'
 
+export const SortByPopularity = async (PostComments) => {
+  const today = new Date().getTime()
+
+  PostComments.sort((a, b) => {
+    const aTrend =
+      (a.likes.length - a.dislikes.length) /
+      (today - new Date(Date.parse(a.createdAt)).getTime())
+    const bTrend =
+      (b.likes.length - b.dislikes.length) /
+      (today - new Date(Date.parse(b.createdAt)).getTime())
+
+    if (aTrend < bTrend) {
+      return 1
+    } else if (aTrend > bTrend) {
+      return -1
+    } else {
+      return 0
+    }
+  })
+
+  return PostComments
+}
+
 export const SortByRecent = async (PostComments) => {
   PostComments.sort((a, b) => {
     return Date.parse(b.createdAt) - Date.parse(a.createdAt)
