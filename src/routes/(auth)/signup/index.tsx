@@ -48,26 +48,25 @@ export const useValidate = globalAction$(
     firstName: z
       .string()
       .trim()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .max(90, { message: 'First name exceeds character limit' }),
     lastName: z
       .string()
       .trim()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .max(90, { message: 'Last name exceeds character limit' }),
     email: z
       .string()
       .trim()
       .toLowerCase()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .email({ message: 'Enter a valid email' })
       .max(180, { message: 'Email name exceeds character limit' }),
     password: z
       .string()
-      .nonempty({ message: 'Fill in all fields' })
       .min(8, { message: 'Password must be at least 8 characters' })
       .max(60, { message: 'Password exceeds character limit' }),
-    passwordConf: z.string().nonempty({ message: 'Fill in all fields' }),
+    passwordConf: z.string().min(1, { message: 'Fill in all fields' }),
   }),
 )
 
@@ -134,30 +133,29 @@ export const useSignup = globalAction$(
     firstName: z
       .string()
       .trim()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .max(90, { message: 'First name exceeds character limit' }),
     lastName: z
       .string()
       .trim()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .max(90, { message: 'Last name exceeds character limit' }),
     email: z
       .string()
       .trim()
       .toLowerCase()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .email({ message: 'Enter a valid email' })
       .max(180, { message: 'Email name exceeds character limit' }),
     password: z
       .string()
-      .nonempty({ message: 'Fill in all fields' })
       .min(8, { message: 'Password must be at least 8 characters' })
       .max(60, { message: 'Password exceeds character limit' }),
-    passwordConf: z.string().nonempty({ message: 'Fill in all fields' }),
+    passwordConf: z.string().min(1, { message: 'Fill in all fields' }),
     username: z
       .string()
       .trim()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .max(50, { message: 'Username exceeds character limit' }),
   }),
 )

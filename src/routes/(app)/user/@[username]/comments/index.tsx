@@ -1,4 +1,4 @@
-import { component$ } from '@builder.io/qwik'
+import { component$, useSignal } from '@builder.io/qwik'
 import { routeLoader$ } from '@builder.io/qwik-city'
 
 import { eq } from 'drizzle-orm'
@@ -20,6 +20,7 @@ export const useGetComments = routeLoader$(async (requestEvent) => {
     where: eq(posts.username, user.username),
     columns: {
       id: true,
+      postId: true,
       createdAt: true,
       content: true,
     },
@@ -39,7 +40,8 @@ export const useGetComments = routeLoader$(async (requestEvent) => {
 })
 
 export default component$(() => {
-  const comments = useGetComments()
+  const data = useGetComments()
+  const comments = useSignal(data.value)
 
   if (comments.value.length === 0) {
     return <></>

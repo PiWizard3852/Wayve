@@ -156,7 +156,8 @@ export const useGetUser = routeLoader$(async (requestEvent) => {
 })
 
 export default component$(() => {
-  const user = useGetUser()
+  const data = useGetUser()
+  const user = useSignal(data.value)
 
   const followUser = useFollowUser()
 

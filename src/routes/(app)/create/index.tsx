@@ -58,12 +58,12 @@ export const useCreatePost = routeAction$(
     title: z
       .string()
       .trim()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .max(80, { message: 'Title exceeds character limit' }),
     content: z
       .string()
       .trim()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .max(500, { message: 'Title exceeds character limit' }),
   }),
 )

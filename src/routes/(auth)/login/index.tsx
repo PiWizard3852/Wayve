@@ -65,8 +65,8 @@ export const useLogin = globalAction$(
       .string()
       .trim()
       .toLowerCase()
-      .nonempty({ message: 'Fill in all fields' }),
-    password: z.string().nonempty({ message: 'Fill in all fields' }),
+      .min(1, { message: 'Fill in all fields' }),
+    password: z.string().min(1, { message: 'Fill in all fields' }),
   }),
 )
 

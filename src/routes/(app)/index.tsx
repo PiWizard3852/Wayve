@@ -1,4 +1,4 @@
-import { component$ } from '@builder.io/qwik'
+import { component$, useSignal } from '@builder.io/qwik'
 import { routeLoader$ } from '@builder.io/qwik-city'
 
 import { ne } from 'drizzle-orm'
@@ -47,7 +47,8 @@ export const useGetPosts = routeLoader$(async (requestEvent) => {
 })
 
 export default component$(() => {
-  const posts = useGetPosts()
+  const data = useGetPosts()
+  const posts = useSignal(data.value)
 
   if (posts.value.length === 0) {
     return <></>

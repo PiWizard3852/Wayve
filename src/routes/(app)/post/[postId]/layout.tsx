@@ -62,13 +62,13 @@ export const useCreateComment = routeAction$(
       })
       .returning()
 
-    return GenerateSuccess('Post published successfully!', comment[0])
+    return GenerateSuccess('Comment published successfully!', comment[0])
   },
   zod$({
     content: z
       .string()
       .trim()
-      .nonempty({ message: 'Fill in all fields' })
+      .min(1, { message: 'Fill in all fields' })
       .max(500, { message: 'Title exceeds character limit' }),
   }),
 )
@@ -119,7 +119,8 @@ export const useGetPost = routeLoader$(async (requestEvent) => {
 })
 
 export default component$(() => {
-  const post = useGetPost()
+  const data = useGetPost()
+  const post = useSignal(data.value)
 
   const createComment = useCreateComment()
 

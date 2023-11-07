@@ -1,4 +1,4 @@
-import { component$ } from '@builder.io/qwik'
+import { component$, useSignal } from '@builder.io/qwik'
 import { Link, routeLoader$ } from '@builder.io/qwik-city'
 
 import { eq } from 'drizzle-orm'
@@ -50,7 +50,8 @@ export const useGetComment = routeLoader$(async (requestEvent) => {
 })
 
 export default component$(() => {
-  const comment = useGetComment()
+  const data = useGetComment()
+  const comment = useSignal(data.value)
 
   if (!comment.value.id) {
     return <></>

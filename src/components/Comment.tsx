@@ -1,20 +1,28 @@
 import { component$, useSignal } from '@builder.io/qwik'
-import { Link } from '@builder.io/qwik-city'
+import { Link, globalAction$, z, zod$ } from '@builder.io/qwik-city'
 
 import { and, eq } from 'drizzle-orm'
 import { marked } from 'marked'
 import abbreviate from 'number-abbreviate'
+import { toast } from 'wc-toast'
 
-import { commentDislikes, postLikes } from '~/db/schema'
+import { commentDislikes, commentLikes, comments } from '~/db/schema'
 
-import { TimeAgo } from '~/components/Utils'
+import { VerifyAuth } from '~/components/Auth'
+import {
+  GenerateError,
+  GenerateSuccess,
+  GetDb,
+  ParseError,
+  TimeAgo,
+} from '~/components/Utils'
 
 export const GetCommentVotes = async function (comments, db, user) {
   for (let i = 0; i < comments.length; i++) {
     const like = await db.query.commentLikes.findFirst({
       where: and(
-        eq(postLikes.postId, comments[i].id),
-        eq(postLikes.voter, user.username),
+        eq(commentLikes.commentId, comments[i].id),
+        eq(commentLikes.voter, user.username),
       ),
     })
 
@@ -37,8 +45,138 @@ export const GetCommentVotes = async function (comments, db, user) {
   return comments
 }
 
+export const useLikeComment = globalAction$(
+  async (data, requestEvent) => {
+    const currentUser = await VerifyAuth(requestEvent)
+
+    if (!currentUser) {
+      throw requestEvent.redirect(302, '/login')
+    }
+
+    const db = GetDb(requestEvent)
+
+    const comment = await db.query.comments.findFirst({
+      columns: {
+        id: true,
+      },
+      where: eq(comments.id, data.id),
+    })
+
+    if (!comment) {
+      return requestEvent.fail(
+        400,
+        GenerateError('comment', 'Comment does not exist'),
+      )
+    }
+
+    const liking = await db.query.commentLikes.findFirst({
+      where: and(
+        eq(commentLikes.commentId, data.id),
+        eq(commentLikes.voter, currentUser.username),
+      ),
+    })
+
+    await db
+      .delete(commentDislikes)
+      .where(
+        and(
+          eq(commentDislikes.commentId, data.id),
+          eq(commentDislikes.voter, currentUser.username),
+        ),
+      )
+
+    if (liking) {
+      await db
+        .delete(commentLikes)
+        .where(
+          and(
+            eq(commentLikes.commentId, data.id),
+            eq(commentLikes.voter, currentUser.username),
+          ),
+        )
+    } else {
+      await db.insert(commentLikes).values({
+        commentId: data.id,
+        voter: currentUser.username,
+      })
+    }
+
+    return GenerateSuccess()
+  },
+  zod$({
+    id: z.string().trim().uuid(),
+  }),
+)
+
+export const useDislikeComment = globalAction$(
+  async (data, requestEvent) => {
+    const currentUser = await VerifyAuth(requestEvent)
+
+    if (!currentUser) {
+      throw requestEvent.redirect(302, '/login')
+    }
+
+    const db = GetDb(requestEvent)
+
+    const comment = await db.query.comments.findFirst({
+      columns: {
+        id: true,
+      },
+      where: eq(comments.id, data.id),
+    })
+
+    if (!comment) {
+      return requestEvent.fail(
+        400,
+        GenerateError('comment', 'Comment does not exist'),
+      )
+    }
+
+    const disliking = await db.query.commentDislikes.findFirst({
+      where: and(
+        eq(commentLikes.commentId, data.id),
+        eq(commentLikes.voter, currentUser.username),
+      ),
+    })
+
+    await db
+      .delete(commentLikes)
+      .where(
+        and(
+          eq(commentLikes.commentId, data.id),
+          eq(commentLikes.voter, currentUser.username),
+        ),
+      )
+
+    if (disliking) {
+      await db
+        .delete(commentDislikes)
+        .where(
+          and(
+            eq(commentDislikes.commentId, data.id),
+            eq(commentDislikes.voter, currentUser.username),
+          ),
+        )
+    } else {
+      await db.insert(commentDislikes).values({
+        commentId: data.id,
+        voter: currentUser.username,
+      })
+    }
+
+    return GenerateSuccess()
+  },
+  zod$({
+    id: z.string().trim().uuid(),
+  }),
+)
+
 // Params of type-any for now
 export const CommentView = component$(({ preview, comment }: any) => {
+  const likeComment = useLikeComment()
+  const dislikeComment = useDislikeComment()
+
+  const currentVote = useSignal<'liking' | 'none' | 'disliking'>(comment.vote)
   const voteCount = useSignal(comment.likes.length - comment.dislikes.length)
 
   return (
@@ -113,7 +251,28 @@ export const CommentView = component$(({ preview, comment }: any) => {
         <div class='flex items-center rounded-[5px] bg-primary p-[10px]'>
           <button
             preventdefault:click
-            class='cursor-pointer duration-200 hover:text-branding'
+            class={
+              'cursor-pointer duration-200 hover:text-branding' +
+              (currentVote.value === 'liking' ? ' text-branding' : '')
+            }
+            onClick$={async () => {
+              const res = await likeComment.submit({ id: comment.id })
+
+              if (res.status === 200) {
+                if (currentVote.value === 'liking') {
+                  voteCount.value -= 1
+                  currentVote.value = 'none'
+                } else if (currentVote.value === 'none') {
+                  voteCount.value += 1
+                  currentVote.value = 'liking'
+                } else if (currentVote.value === 'disliking') {
+                  voteCount.value += 2
+                  currentVote.value = 'liking'
+                }
+              } else {
+                toast.error(ParseError(res, ['id', 'comment']))
+              }
+            }}
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
@@ -127,7 +286,28 @@ export const CommentView = component$(({ preview, comment }: any) => {
           <div class='mx-[5px]'>{abbreviate(voteCount.value)}</div>
           <button
             preventdefault:click
-            class='cursor-pointer duration-200 hover:text-branding'
+            class={
+              'cursor-pointer duration-200 hover:text-branding' +
+              (currentVote.value === 'disliking' ? ' text-branding' : '')
+            }
+            onClick$={async () => {
+              const res = await dislikeComment.submit({ id: comment.id })
+
+              if (res.status === 200) {
+                if (currentVote.value === 'liking') {
+                  voteCount.value -= 2
+                  currentVote.value = 'disliking'
+                } else if (currentVote.value === 'none') {
+                  voteCount.value -= 1
+                  currentVote.value = 'disliking'
+                } else if (currentVote.value === 'disliking') {
+                  voteCount.value += 1
+                  currentVote.value = 'none'
+                }
+              } else {
+                toast.error(ParseError(res, ['id', 'comment']))
+              }
+            }}
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
