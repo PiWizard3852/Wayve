@@ -76,6 +76,13 @@ export const useCreateComment = routeAction$(
 export const useGetPost = routeLoader$(async (requestEvent) => {
   const postId = requestEvent.params.postId
 
+  const isUuid =
+    /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi
+
+  if (!isUuid.test(postId)) {
+    throw requestEvent.redirect(302, '/')
+  }
+
   const currentUser = await VerifyAuth(requestEvent)
 
   if (!currentUser) {
