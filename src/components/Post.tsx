@@ -1,13 +1,21 @@
 import { component$, useSignal } from '@builder.io/qwik'
-import { Link } from '@builder.io/qwik-city'
+import { Link, globalAction$, z, zod$ } from '@builder.io/qwik-city'
 
 import { and, eq } from 'drizzle-orm'
 import { marked } from 'marked'
 import abbreviate from 'number-abbreviate'
+import { toast } from 'wc-toast'
 
-import { postDislikes, postLikes } from '~/db/schema'
+import { postDislikes, postLikes, posts } from '~/db/schema'
 
-import { TimeAgo } from '~/components/Utils'
+import { VerifyAuth } from '~/components/Auth'
+import {
+  GenerateError,
+  GenerateSuccess,
+  GetDb,
+  ParseError,
+  TimeAgo,
+} from '~/components/Utils'
 
 export const GetPostVote = async function (posts, db, currentUser) {
   for (let i = 0; i < posts.length; i++) {
@@ -37,8 +45,138 @@ export const GetPostVote = async function (posts, db, currentUser) {
   return posts
 }
 
+export const useLikePost = globalAction$(
+  async (data, requestEvent) => {
+    const currentUser = await VerifyAuth(requestEvent)
+
+    if (!currentUser) {
+      throw requestEvent.redirect(302, '/login')
+    }
+
+    const db = GetDb(requestEvent)
+
+    const post = await db.query.posts.findFirst({
+      columns: {
+        id: true,
+      },
+      where: eq(posts.id, data.id),
+    })
+
+    if (!post) {
+      return requestEvent.fail(
+        400,
+        GenerateError('post', 'Post does not exist'),
+      )
+    }
+
+    const liking = await db.query.postLikes.findFirst({
+      where: and(
+        eq(postLikes.postId, data.id),
+        eq(postLikes.voter, currentUser.username),
+      ),
+    })
+
+    await db
+      .delete(postDislikes)
+      .where(
+        and(
+          eq(postDislikes.postId, data.id),
+          eq(postDislikes.voter, currentUser.username),
+        ),
+      )
+
+    if (liking) {
+      await db
+        .delete(postLikes)
+        .where(
+          and(
+            eq(postLikes.postId, data.id),
+            eq(postLikes.voter, currentUser.username),
+          ),
+        )
+    } else {
+      await db.insert(postLikes).values({
+        postId: data.id,
+        voter: currentUser.username,
+      })
+    }
+
+    return GenerateSuccess()
+  },
+  zod$({
+    id: z.string().trim().uuid(),
+  }),
+)
+
+export const useDislikePost = globalAction$(
+  async (data, requestEvent) => {
+    const currentUser = await VerifyAuth(requestEvent)
+
+    if (!currentUser) {
+      throw requestEvent.redirect(302, '/login')
+    }
+
+    const db = GetDb(requestEvent)
+
+    const post = await db.query.posts.findFirst({
+      columns: {
+        id: true,
+      },
+      where: eq(posts.id, data.id),
+    })
+
+    if (!post) {
+      return requestEvent.fail(
+        400,
+        GenerateError('post', 'Post does not exist'),
+      )
+    }
+
+    const disliking = await db.query.postDislikes.findFirst({
+      where: and(
+        eq(postLikes.postId, data.id),
+        eq(postLikes.voter, currentUser.username),
+      ),
+    })
+
+    await db
+      .delete(postLikes)
+      .where(
+        and(
+          eq(postLikes.postId, data.id),
+          eq(postLikes.voter, currentUser.username),
+        ),
+      )
+
+    if (disliking) {
+      await db
+        .delete(postDislikes)
+        .where(
+          and(
+            eq(postDislikes.postId, data.id),
+            eq(postDislikes.voter, currentUser.username),
+          ),
+        )
+    } else {
+      await db.insert(postDislikes).values({
+        postId: data.id,
+        voter: currentUser.username,
+      })
+    }
+
+    return GenerateSuccess()
+  },
+  zod$({
+    id: z.string().trim().uuid(),
+  }),
+)
+
 // Params of type-any for now
 export const PostView = component$(({ preview, post }: any) => {
+  const likePost = useLikePost()
+  const dislikePost = useDislikePost()
+
+  const currentVote = useSignal<'liking' | 'none' | 'disliking'>(post.vote)
   const voteCount = useSignal(post.likes.length - post.dislikes.length)
 
   return (
@@ -118,7 +256,28 @@ export const PostView = component$(({ preview, post }: any) => {
         <div class='flex items-center rounded-[5px] bg-primary p-[10px]'>
           <button
             preventdefault:click
-            class='cursor-pointer duration-200 hover:text-branding'
+            class={
+              'cursor-pointer duration-200 hover:text-branding' +
+              (currentVote.value === 'liking' ? ' text-branding' : '')
+            }
+            onClick$={async () => {
+              const res = await likePost.submit({ id: post.id })
+
+              if (res.status === 200) {
+                if (currentVote.value === 'liking') {
+                  voteCount.value -= 1
+                  currentVote.value = 'none'
+                } else if (currentVote.value === 'none') {
+                  voteCount.value += 1
+                  currentVote.value = 'liking'
+                } else if (currentVote.value === 'disliking') {
+                  voteCount.value += 2
+                  currentVote.value = 'liking'
+                }
+              } else {
+                toast.error(ParseError(res, ['id', 'post']))
+              }
+            }}
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
@@ -132,7 +291,28 @@ export const PostView = component$(({ preview, post }: any) => {
           <div class='mx-[5px]'>{abbreviate(voteCount.value)}</div>
           <button
             preventdefault:click
-            class='cursor-pointer duration-200 hover:text-branding'
+            class={
+              'cursor-pointer duration-200 hover:text-branding' +
+              (currentVote.value === 'disliking' ? ' text-branding' : '')
+            }
+            onClick$={async () => {
+              const res = await dislikePost.submit({ id: post.id })
+
+              if (res.status === 200) {
+                if (currentVote.value === 'liking') {
+                  voteCount.value -= 2
+                  currentVote.value = 'disliking'
+                } else if (currentVote.value === 'none') {
+                  voteCount.value -= 1
+                  currentVote.value = 'disliking'
+                } else if (currentVote.value === 'disliking') {
+                  voteCount.value += 1
+                  currentVote.value = 'none'
+                }
+              } else {
+                toast.error(ParseError(res, ['id', 'post']))
+              }
+            }}
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
