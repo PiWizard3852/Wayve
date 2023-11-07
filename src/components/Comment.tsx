@@ -256,20 +256,26 @@ export const CommentView = component$(({ preview, comment }: any) => {
               (currentVote.value === 'liking' ? ' text-branding' : '')
             }
             onClick$={async () => {
+              const lastVoteCount = voteCount.value
+              const lastVote = currentVote.value
+
+              if (currentVote.value === 'liking') {
+                voteCount.value -= 1
+                currentVote.value = 'none'
+              } else if (currentVote.value === 'none') {
+                voteCount.value += 1
+                currentVote.value = 'liking'
+              } else if (currentVote.value === 'disliking') {
+                voteCount.value += 2
+                currentVote.value = 'liking'
+              }
+
               const res = await likeComment.submit({ id: comment.id })
 
-              if (res.status === 200) {
-                if (currentVote.value === 'liking') {
-                  voteCount.value -= 1
-                  currentVote.value = 'none'
-                } else if (currentVote.value === 'none') {
-                  voteCount.value += 1
-                  currentVote.value = 'liking'
-                } else if (currentVote.value === 'disliking') {
-                  voteCount.value += 2
-                  currentVote.value = 'liking'
-                }
-              } else {
+              if (res.status !== 200) {
+                voteCount.value = lastVoteCount
+                currentVote.value = lastVote
+
                 toast.error(ParseError(res, ['id', 'comment']))
               }
             }}
@@ -291,20 +297,26 @@ export const CommentView = component$(({ preview, comment }: any) => {
               (currentVote.value === 'disliking' ? ' text-branding' : '')
             }
             onClick$={async () => {
+              const lastVoteCount = voteCount.value
+              const lastVote = currentVote.value
+
+              if (currentVote.value === 'liking') {
+                voteCount.value -= 2
+                currentVote.value = 'disliking'
+              } else if (currentVote.value === 'none') {
+                voteCount.value -= 1
+                currentVote.value = 'disliking'
+              } else if (currentVote.value === 'disliking') {
+                voteCount.value += 1
+                currentVote.value = 'none'
+              }
+
               const res = await dislikeComment.submit({ id: comment.id })
 
-              if (res.status === 200) {
-                if (currentVote.value === 'liking') {
-                  voteCount.value -= 2
-                  currentVote.value = 'disliking'
-                } else if (currentVote.value === 'none') {
-                  voteCount.value -= 1
-                  currentVote.value = 'disliking'
-                } else if (currentVote.value === 'disliking') {
-                  voteCount.value += 1
-                  currentVote.value = 'none'
-                }
-              } else {
+              if (res.status !== 200) {
+                voteCount.value = lastVoteCount
+                currentVote.value = lastVote
+
                 toast.error(ParseError(res, ['id', 'comment']))
               }
             }}
