@@ -29,10 +29,17 @@ export const useLogin = globalAction$(
       where: eq(users.email, data.email),
     })
 
+    if (!user) {
+      return requestEvent.fail(
+        400,
+        GenerateError('password', 'Invalid email or password'),
+      )
+    }
+
     const passwordsMatch =
       (await HashText(data.password, requestEvent)) === user.password
 
-    if (!user || !passwordsMatch) {
+    if (!passwordsMatch) {
       return requestEvent.fail(
         400,
         GenerateError('password', 'Invalid email or password'),
