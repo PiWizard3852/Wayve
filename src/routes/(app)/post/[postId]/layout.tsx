@@ -180,11 +180,12 @@ export default component$(() => {
               } else {
                 toast.success(ParseSuccess(res).message)
                 content.value = ''
-                await navigate(
-                  '/post/' +
-                    ParseSuccess(res).data.postId +
-                    '/comment/' +
-                    ParseSuccess(res).data.id,
+                setTimeout(() =>
+                  navigate(
+                    `/post/${ParseSuccess(res).data.postId}/comment/${
+                      ParseSuccess(res).data.id
+                    }`,
+                  ),
                 )
               }
 

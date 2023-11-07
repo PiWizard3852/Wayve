@@ -115,7 +115,7 @@ export default component$(() => {
 
           if (res.status === 200) {
             toast.success(ParseSuccess(res).message)
-            await navigate('/')
+            setTimeout(() => navigate('/'))
           } else {
             toast.error(ParseError(res, ['email', 'password']))
           }

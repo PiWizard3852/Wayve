@@ -116,7 +116,7 @@ export default component$(() => {
                 toast.success(ParseSuccess(res).message)
                 title.value = ''
                 content.value = ''
-                await navigate('/post/' + ParseSuccess(res).data.id)
+                setTimeout(() => navigate(`/post/${ParseSuccess(res).data.id}`))
               }
 
               loading.value = false
