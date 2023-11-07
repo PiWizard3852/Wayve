@@ -69,7 +69,7 @@ export const useCreateComment = routeAction$(
       .string()
       .trim()
       .min(1, { message: 'Fill in all fields' })
-      .max(500, { message: 'Title exceeds character limit' }),
+      .max(500, { message: 'Content exceeds character limit' }),
   }),
 )
 

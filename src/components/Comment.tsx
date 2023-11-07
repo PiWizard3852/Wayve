@@ -185,7 +185,7 @@ export const CommentView = component$(({ preview, comment }: any) => {
         <div class='flex w-full items-center'>
           <Link
             class='cursor-pointer'
-            href={'/user/@' + comment.user.username}
+            href={'/user/@' + comment.user.username.toLowerCase()}
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
@@ -203,13 +203,13 @@ export const CommentView = component$(({ preview, comment }: any) => {
           <div class='ml-[5px] flex max-w-[calc(100%-65px)] flex-col'>
             <Link
               class='max-w-full cursor-pointer truncate text-[16px] sm:text-[17px]'
-              href={'/user/@' + comment.user.username}
+              href={'/user/@' + comment.user.username.toLowerCase()}
             >
               {comment.user.name}
             </Link>
             <Link
               class='max-w-full cursor-pointer truncate text-[14px] text-gray sm:text-[15px]'
-              href={'/user/@' + comment.user.username}
+              href={'/user/@' + comment.user.username.toLowerCase()}
             >
               @{comment.user.username}
             </Link>
