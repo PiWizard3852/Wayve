@@ -196,7 +196,7 @@ export default component$(() => {
           <div class='flex w-full items-center'>
             <Link
               class='cursor-pointer'
-              href={'/user/@' + user.value.username}
+              href={'/user/@' + user.value.username.toLowerCase()}
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -214,13 +214,13 @@ export default component$(() => {
             <div class='ml-[5px] flex max-w-[calc(100%-65px)] flex-col'>
               <Link
                 class='max-w-full cursor-pointer truncate text-[16px] sm:text-[17px]'
-                href={'/user/@' + user.value.username}
+                href={'/user/@' + user.value.username.toLowerCase()}
               >
                 <h1>{user.value.name}</h1>
               </Link>
               <Link
                 class='max-w-full cursor-pointer truncate text-[14px] text-gray sm:text-[15px]'
-                href={'/user/@' + user.value.username}
+                href={'/user/@' + user.value.username.toLowerCase()}
               >
                 <h2>@{user.value.username}</h2>
               </Link>

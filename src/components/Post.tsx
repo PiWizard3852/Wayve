@@ -185,7 +185,7 @@ export const PostView = component$(({ preview, post }: any) => {
         <div class='flex w-full items-center'>
           <Link
             class='cursor-pointer'
-            href={'/user/@' + post.user.username}
+            href={'/user/@' + post.user.username.toLowerCase()}
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
@@ -203,13 +203,13 @@ export const PostView = component$(({ preview, post }: any) => {
           <div class='ml-[5px] flex max-w-[calc(100%-65px)] flex-col'>
             <Link
               class='max-w-full cursor-pointer truncate text-[16px] sm:text-[17px]'
-              href={'/user/@' + post.user.username}
+              href={'/user/@' + post.user.username.toLowerCase()}
             >
               {post.user.name}
             </Link>
             <Link
               class='max-w-full cursor-pointer truncate text-[14px] text-gray sm:text-[15px]'
-              href={'/user/@' + post.user.username}
+              href={'/user/@' + post.user.username.toLowerCase()}
             >
               @{post.user.username}
             </Link>
