@@ -159,7 +159,7 @@ export default component$(() => {
           bind:value={content}
           rows={1}
           placeholder='What do you think?'
-          class='w-full whitespace-normal rounded-[5px] bg-primary p-[10px] placeholder-gray outline-none'
+          class='w-full whitespace-pre-line rounded-[5px] bg-primary p-[10px] placeholder-gray outline-none'
         />
         <button
           preventdefault:click

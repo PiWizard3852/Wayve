@@ -89,11 +89,11 @@ export default component$(() => {
   return (
     <form class='mb-[20px] flex w-full flex-col rounded-[8px] border border-border bg-white p-[20px]'>
       <div class='mb-[10px] flex w-full'>
-        <input
-          type='text'
+        <textarea
+          cols={1}
           placeholder='Title your post'
           bind:value={title}
-          class='w-full rounded-[5px] bg-primary p-[10px] placeholder-gray outline-none'
+          class='h-[24px] w-full whitespace-nowrap rounded-[5px] bg-primary p-[10px] placeholder-gray outline-none'
         />
         <button
           preventdefault:click
@@ -148,7 +148,7 @@ export default component$(() => {
         bind:value={content}
         rows={10}
         placeholder='What&#8217;s on your mind?'
-        class='whitespace-normal rounded-[5px] bg-primary p-[10px] placeholder-gray outline-none'
+        class='whitespace-pre-line rounded-[5px] bg-primary p-[10px] placeholder-gray outline-none'
       />
     </form>
   )
