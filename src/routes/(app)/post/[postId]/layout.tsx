@@ -30,10 +30,7 @@ export const useCreateComment = routeAction$(
     const currentUser = await VerifyAuth(requestEvent)
 
     if (!currentUser) {
-      return requestEvent.fail(
-        400,
-        GenerateError('currentUser', 'Unauthorized'),
-      )
+      throw requestEvent.redirect(302, '/login')
     }
 
     const contentTrim = data.content
@@ -117,9 +114,7 @@ export const useGetPost = routeLoader$(async (requestEvent) => {
   })
 
   if (!post) {
-    return requestEvent.fail(404, {
-      response: 'Post does not exist',
-    })
+    throw requestEvent.redirect(301, '/')
   }
 
   return (await GetPostVote([post], db, currentUser))[0]
@@ -144,10 +139,6 @@ export default component$(() => {
       e.target.style.height = e.target.scrollHeight - 20 + 'px'
     })
   })
-
-  if (!post.value.id) {
-    return <div ref={textareaRef} />
-  }
 
   return (
     <>
@@ -179,7 +170,9 @@ export default component$(() => {
                 )
               } else {
                 toast.success(ParseSuccess(res).message)
+
                 content.value = ''
+
                 setTimeout(() =>
                   navigate(
                     `/post/${ParseSuccess(res).data.postId}/comment/${

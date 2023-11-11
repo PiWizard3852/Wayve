@@ -13,17 +13,17 @@ export const useGetComment = routeLoader$(async (requestEvent) => {
   const postId = requestEvent.params.postId
   const commentId = requestEvent.params.commentId
 
+  const currentUser = await VerifyAuth(requestEvent)
+
+  if (!currentUser) {
+    throw requestEvent.redirect(302, '/login')
+  }
+
   const isUuid =
     /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi
 
   if (!isUuid.test(commentId)) {
     throw requestEvent.redirect(302, '/post/' + postId)
-  }
-
-  const currentUser = await VerifyAuth(requestEvent)
-
-  if (!currentUser) {
-    throw requestEvent.redirect(302, '/login')
   }
 
   const db = GetDb(requestEvent)
@@ -49,9 +49,7 @@ export const useGetComment = routeLoader$(async (requestEvent) => {
   })
 
   if (!comment) {
-    return requestEvent.fail(404, {
-      response: 'Comment does not exist',
-    })
+    throw requestEvent.redirect(301, '/post/' + postId)
   }
 
   return (await GetCommentVotes([comment], db, currentUser))[0]
@@ -60,10 +58,6 @@ export const useGetComment = routeLoader$(async (requestEvent) => {
 export default component$(() => {
   const data = useGetComment()
   const comment = useSignal(data.value)
-
-  if (!comment.value.id) {
-    return <></>
-  }
 
   return (
     <div class='mb-[20px] flex flex-col'>

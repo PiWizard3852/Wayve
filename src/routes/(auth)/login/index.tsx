@@ -25,6 +25,7 @@ export const useLogin = globalAction$(
       columns: {
         username: true,
         password: true,
+        emailVerified: true,
       },
       where: eq(users.email, data.email),
     })
@@ -43,6 +44,13 @@ export const useLogin = globalAction$(
       return requestEvent.fail(
         400,
         GenerateError('password', 'Invalid email or password'),
+      )
+    }
+
+    if (!user.emailVerified) {
+      return requestEvent.fail(
+        400,
+        GenerateError('account', 'Please confirm your email'),
       )
     }
 
@@ -117,7 +125,7 @@ export default component$(() => {
             toast.success(ParseSuccess(res).message)
             setTimeout(() => navigate('/'))
           } else {
-            toast.error(ParseError(res, ['email', 'password']))
+            toast.error(ParseError(res, ['email', 'password', 'account']))
           }
 
           loading.value = false

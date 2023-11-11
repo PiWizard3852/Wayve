@@ -26,7 +26,7 @@ export const useFollowUser = routeAction$(async (_, requestEvent) => {
   const currentUser = await VerifyAuth(requestEvent)
 
   if (!currentUser) {
-    return requestEvent.fail(400, GenerateError('currentUser', 'Unauthorized'))
+    throw requestEvent.redirect(302, '/login')
   }
 
   const db = GetDb(requestEvent)

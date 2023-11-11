@@ -147,7 +147,7 @@ export default component$(() => {
         ref={textareaRef}
         bind:value={content}
         rows={10}
-        placeholder='What&#8217;s on your mind?'
+        placeholder='What&#039;s on your mind?'
         class='whitespace-pre-line rounded-[5px] bg-primary p-[10px] placeholder-gray outline-none'
       />
     </form>

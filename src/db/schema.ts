@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm'
 import {
+  boolean,
   pgTable,
   timestamp,
   uniqueIndex,
@@ -13,6 +14,7 @@ export const users = pgTable(
     name: varchar('name', { length: 180 }).notNull(),
     username: varchar('username', { length: 50 }).primaryKey().notNull(),
     email: varchar('email', { length: 180 }).notNull(),
+    emailVerified: boolean('email_verified').default(false),
     password: varchar('password', { length: 60 }).notNull(),
     createdAt: timestamp('created_at', {
       withTimezone: false,
@@ -26,7 +28,11 @@ export const users = pgTable(
   },
 )
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const userRelations = relations(users, ({ one, many }) => ({
+  verification: one(verifications, {
+    fields: [users.email],
+    references: [verifications.email],
+  }),
   followers: many(followers, { relationName: 'followers' }),
   following: many(followers, { relationName: 'following' }),
   posts: many(posts),
@@ -35,6 +41,30 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
   commentLikes: many(commentLikes),
   commentDislikes: many(commentDislikes),
+}))
+
+export const verifications = pgTable(
+  'verification',
+  {
+    id: uuid('id').defaultRandom(),
+    email: varchar('email', { length: 180 }).notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: false,
+      mode: 'date',
+    }).defaultNow(),
+  },
+  (table) => {
+    return {
+      emailKey: uniqueIndex('email_key').on(table.email),
+    }
+  },
+)
+
+export const verificationRelations = relations(verifications, ({ one }) => ({
+  user: one(users, {
+    fields: [verifications.email],
+    references: [users.email],
+  }),
 }))
 
 export const followers = pgTable('follower', {
